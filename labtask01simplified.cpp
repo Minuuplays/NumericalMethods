@@ -66,7 +66,34 @@ int main() {
             double c_old = x1;
             int iterations = 0;
 
-            while (true) {
+            do{
+                // 1. Save the previous root estimate BEFORE computing the new one
+                c_old = c;
+
+                iterations++;
+
+                // 2. Compute function values at bounds
+                double f1 = evaluate(x1, a4, a3, a2, a1, a0);
+                double f2 = evaluate(x2, a4, a3, a2, a1, a0);
+
+                // 3. Compute new root estimate 'c' using False Position
+                c = x1 - (f1 * (x2 - x1)) / (f2 - f1);
+                double fc = evaluate(c, a4, a3, a2, a1, a0);
+
+                // 4. Update the interval
+                if (f1 * fc < 0)
+                {
+                    x2 = c;
+                }
+                else
+                {
+                    x1 = c;
+                }
+
+                // 5. Keep looping as long as error >= E AND iteration limit not hit
+            } while (iterations == 1 || (abs((c - c_old) / c) >= E && iterations < 1000));
+
+            /*while (true) {
                 iterations++;
 
                 double f1 = evaluate(x1, a4, a3, a2, a1, a0);
@@ -92,7 +119,7 @@ int main() {
 
                 // Safety guard against infinite loops
                 if (iterations > 1000) break;
-            }
+            }*/
 
             // Print output for this root
             cout << "Root " << rootCount << " : x = " << c << endl;
