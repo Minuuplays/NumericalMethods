@@ -136,71 +136,48 @@ int main()
     vector<vector<double>> L(n, vector<double>(n, 0));
     vector<vector<double>> U(n, vector<double>(n, 0));
 
-    // Doolittle method - L has unit diagonal elements
+    // Doolittle: L has unit diagonal, U is general upper triangular
     for (int i = 0; i < n; i++)
     {
-        for (int j = i; j < n; j++)
-        { // row of U
-            double sum = 0;
-            for (int k = 0; k < i; k++)
-            {
-                sum += L[i][k] * U[k][i];
-            }
-            L[i][j] = A[i][j] - sum;
-        }
-        U[i][i] = 1; // diagonal of U is always 1
-        for (int j = i + 1; j < n; j++)
-        { // column of U
-            double sum = 0;
-            for (int k = 0; k < i; k++)
-            {
-                sum += L[j][k] * U[k][j];
-            }
-            U[j][i] = (A[j][i] - sum) / L[i][i];
-        }
-    }
-
-    cout << "Lower Triangular Matrix L:\n";
-    for (int i = 0; i < n; i++)
-    {
-        for (int j = 0; j < n; j++)
+        // Row i of U (columns i..n-1)
+        for (int k = i; k < n; k++)
         {
-            cout << L[i][j] << "  ";
+            double sum = 0;
+            for (int j = 0; j < i; j++)
+                sum += L[i][j] * U[j][k];
+            U[i][k] = A[i][k] - sum;
         }
-        cout << endl;
-    }
 
-    cout << "Upper Triangular Matrix U:\n";
-    for (int i = 0; i < n; i++)
-    {
-        for (int j = 0; j < n; j++)
+        L[i][i] = 1; // diagonal of L is always 1
+
+        // Column i of L (rows i+1..n-1)
+        for (int k = i + 1; k < n; k++)
         {
-            cout << U[i][j] << "  ";
+            double sum = 0;
+            for (int j = 0; j < i; j++)
+                sum += L[k][j] * U[j][i];
+            L[k][i] = (A[k][i] - sum) / U[i][i];
         }
-        cout << endl;
     }
 
-    // Forward Substitution L*y=b
+    // Forward substitution L*y = b   (L[i][i] = 1, so no division)
     vector<double> y(n);
     for (int i = 0; i < n; i++)
     {
         double sum = 0;
         for (int k = 0; k < i; k++)
-        {
-        }
-        y[i] = (b[i] - sum); // L[i][i]=1 ...no division needed
+            sum += L[i][k] * y[k];
+        y[i] = b[i] - sum;
     }
 
-    // Backward Substituition U*x = y
+    // Backward substitution U*x = y
     vector<double> x(n);
     for (int i = n - 1; i >= 0; i--)
     {
         double sum = 0;
         for (int k = i + 1; k < n; k++)
-        {
             sum += U[i][k] * x[k];
-        }
-        x[i] = (y[i] - sum)/U[i][i]; // U[i][i] = 1 always...so no divition needed
+        x[i] = (y[i] - sum) / U[i][i];
     }
 
     // Print the final solution
