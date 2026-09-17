@@ -187,7 +187,6 @@ int main()
         double sum = 0;
         for (int k = 0; k < i; k++)
         {
-            sum += L[i][k] * y[k];
         }
         y[i] = (b[i] - sum); // L[i][i]=1 ...no division needed
     }
