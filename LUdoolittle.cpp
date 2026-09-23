@@ -148,7 +148,7 @@ int main()
             U[i][k] = A[i][k] - sum;
         }
 
-        L[i][i] = 1; // diagonal of L is always 1
+        L[i][i] = 1;     // diagonal of L is always 1
 
         // Column i of L (rows i+1..n-1)
         for (int k = i + 1; k < n; k++)

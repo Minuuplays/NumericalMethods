@@ -150,7 +150,7 @@ int main()
         }
         U[j][j] = 1; // diagonal of U is always 1
         for (int i = j + 1; i < n; i++)
-        { // row of U
+        {            // row of U
             double sum = 0;
             for (int k = 0; k < j; k++)
             {
