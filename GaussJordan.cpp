@@ -1,96 +1,146 @@
-#include<bits/stdc++.h>
+#include <bits/stdc++.h>
 using namespace std;
 
-int rnk(vector<vector<double>>A){
+const double EPS = 1e-12;
 
-int rows=A.size();
-int cols=A[0].size();
+// ---------------------------------------------------------------------
+// Rank computation — completely independent of gauss().
+// Row-reduces a copy of M with partial pivoting and counts pivots.
+// Used twice in main(): once on A, once on [A|B].
+// ---------------------------------------------------------------------
+int rnk(vector<vector<double>> M)
+{
+    int rows = M.size();
+    int cols = M[0].size();
 
-int rank=0;
+    int rank = 0;
+    for (int col = 0; col < cols && rank < rows; col++)
+    {
+        int pivot = rank;
+        for (int i = rank + 1; i < rows; i++)
+            if (fabs(M[i][col]) > fabs(M[pivot][col]))
+                pivot = i;
 
-for(int col=0;col<cols && rank<rows;col++){
-    int pivot=rank;
-    for(int i=rank+1;i<rows;i++){
-        if(fabs(A[i][col])>fabs(A[pivot][col])){
-            pivot=i;
+        if (fabs(M[pivot][col]) < EPS)
+            continue;
+
+        swap(M[rank], M[pivot]);
+
+        for (int i = rank + 1; i < rows; i++)
+        {
+            double factor = M[i][col] / M[rank][col];
+            for (int j = col; j < cols; j++)
+                M[i][j] -= factor * M[rank][j];
         }
-
+        rank++;
     }
-    if(fabs(A[pivot][col])<1e-12)
-        continue;
-    swap(A[rank],A[pivot]);
-    for(int i=rank+1;i<rows;i++){
-        double factor=A[i][col]/A[rank][col];
-        for(int j=col;j<cols;j++){
-            A[i][j]=A[i][j]-factor*A[rank][j];
+    return rank;
+}
+
+// ---------------------------------------------------------------------
+// Gauss-Jordan elimination on the augmented matrix U (n x n+1).
+// Reduces U's first n columns to the identity, eliminating both above
+// and below each pivot, so U[i][n] is the solution directly — no
+// back-substitution needed. Returns false if singular.
+// Does not call rnk() or share state with it.
+// ---------------------------------------------------------------------
+bool gauss(vector<vector<double>> U, vector<double> &X)
+{
+    int n = U.size();
+
+    for (int k = 0; k < n; k++)
+    {
+        // partial pivoting
+        int pivot = k;
+        for (int i = k + 1; i < n; i++)
+            if (fabs(U[i][k]) > fabs(U[pivot][k]))
+                pivot = i;
+
+        if (fabs(U[pivot][k]) < EPS)
+            return false; // no valid pivot in this column -> singular
+
+        swap(U[k], U[pivot]);
+
+        double pivotV = U[k][k];
+        for (int j = 0; j < n + 1; j++)
+            U[k][j] /= pivotV;
+
+        for (int i = 0; i < n; i++)
+        {
+            if (i == k)
+                continue;
+            double factor = U[i][k];
+            if (factor == 0.0)
+                continue;
+            for (int j = 0; j < n + 1; j++)
+                U[i][j] -= factor * U[k][j];
         }
     }
-    rank++;
+
+    for (int i = 0; i < n; i++)
+        X[i] = U[i][n];
+
+    return true;
 }
-return rank;
-}
 
-bool guss(vector<vector<double>>A,vector<double>B,vector<double> &X){
+int main()
+{
+    int n;
+    if (!(cin >> n) || n <= 0)
+    {
+        cout << "Invalid n\n";
+        return 0;
+    }
 
-int n=A.size();
+    vector<vector<double>> A(n, vector<double>(n));
+    vector<double> B(n);
+    vector<vector<double>> AB(n, vector<double>(n + 1)); // for rnk() only
+    vector<vector<double>> U(n, vector<double>(n + 1));  // for gauss() only
 
-//for(int i=0;i<n;i++){
-    //if(fabs(A[i][i])<1e-12){
-       // return false;
-   // }
-
-
-for(int k=0;k<n-1;k++){
-    for(int i=k+1;i<n;i++){
-        double factor=A[i][k]/A[k][k];
-        for(int j=k;j<n;j++){
-            A[i][j]=A[i][j]-factor*A[k][j];
+    for (int i = 0; i < n; i++)
+    {
+        for (int j = 0; j < n; j++)
+        {
+            cin >> A[i][j];
+            AB[i][j] = A[i][j];
+            U[i][j] = A[i][j];
         }
-        B[i]=B[i]-factor*B[k];
-    }
-}
-
-for(int i=n-1;i>=0;i--){
-        double sum=B[i];
-    for(int j=i+1;j<n;j++){
-        sum -= A[i][j]*X[j];
-    }
-X[i]=sum/A[i][i];
-}
-return true;
-}
-
-int main(){
-
-int n;
-cin>>n;
-
-vector<vector<double>>A(n,vector<double>(n));
-vector<double>B(n);
-
-for(int i=0;i<n;i++){
-    for(int j=0;j<n;j++){
-        cin>>A[i][j];
-    }
-}
-for(int i=0;i<n;i++){
-    cin>>B[i];
-}
-int rnkA=rnk(A);
-cout<<"Rank of A: "<<rnkA<<endl;
-cout<<"------------------\n";
-
-vector<double>X(n,0);
-if(guss(A,B,X)){
-    cout<<"The solution:\n";
-    for(int i=0;i<n;i++){
-    cout<<"x"<<i+1<<" = "<<X[i]<<endl;
+        cin >> B[i];
+        AB[i][n] = B[i];
+        U[i][n] = B[i];
     }
 
+    int rankA  = rnk(A);
+    int rankAB = rnk(AB); // includes RHS column, so an inconsistent row
+                           // (0 0 ... 0 | nonzero) is correctly counted
+
+    cout << "Rank of A: " << rankA << "\n";
+    cout << "Rank of [A|B]: " << rankAB << "\n";
+    cout << "--------------\n";
+
+    if (rankA != rankAB)
+    {
+        cout << "No solution (system is inconsistent)\n";
+    }
+    else if (rankA < n)
+    {
+        cout << "Infinitely many solutions (system is underdetermined)\n";
+    }
+    else
+    {
+        vector<double> X(n, 0.0);
+        if (gauss(U, X))
+        {
+            for (int i = 0; i < n; i++)
+                cout << "x" << i + 1 << " = " << X[i] << "\n";
+        }
+        else
+        {
+            // Shouldn't happen given rankA == n, but kept as a safety net
+            // since gauss() does its own independent pivoting/checks.
+            cout << "gauss() reported singular despite rankA == n\n";
+        }
+    }
+
+    return 0;
 }
-else{
-    cout<<"Not exist\n"<<endl;
-}
-return 0;
-}
-gauss eli eita
