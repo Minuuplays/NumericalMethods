@@ -1,4 +1,4 @@
-// Solve the linear system A x = b by finding the inverse of A:  x = A^-1 * b
+// Solve the linear system A x = b by finding the inverse of A:  x = A^-1 * b 
 // The inverse is found with Gauss-Jordan elimination (with row swapping).
 
 #include <iostream>
